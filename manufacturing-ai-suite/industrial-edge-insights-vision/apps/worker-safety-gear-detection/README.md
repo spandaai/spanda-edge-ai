@@ -7,17 +7,51 @@
 
 - [System Requirements](docs/user-guide/system-requirements.md)
 
+### Install Host Prerequisites
+
+Before running any scripts, ensure your host system has `jq` installed.
+`jq` is required by shell scripts to parse and manipulate JSON files (such as `payload.json`).
+
+```bash
+sudo apt update
+sudo apt install jq -y
+```
+
+If you skip this, commands like `./sample_start.sh` will fail with:
+
+```
+jq: command not found
+```
+
+---
+
 ## Setup the application
 > Note that the following instructions assume Docker engine is setup in the host system.
 
 1. Clone the **edge-ai-suites** repository and change into industrial-edge-insights-vision directory. The directory contains the utility scripts required in the instructions that follows.
     ```sh
-    git clone https://github.com/open-edge-platform/edge-ai-suites.git
-    cd edge-ai-suites/manufacturing-ai-suite/industrial-edge-insights-vision/
+    git clone git@github.com:spandaai/spanda-edge-ai.git
+    cd spanda-edge-ai/manufacturing-ai-suite/industrial-edge-insights-vision/
     ```
 2.  Set app specific environment variable file
     ```sh
     cp .env_worker_safety_gear_detection .env
+
+3. **Find and set `HOST_IP` in `.env`**
+
+   * **On Windows** (Command Prompt):
+
+     ```cmd
+     ipconfig
+     ```
+
+     Use the **Wireless LAN adapter Wi-Fi IPv4 address** — unless your PC is physically connected via Ethernet.
+
+   * **On Linux/macOS**:
+
+     ```bash
+     hostname -I
+     ```
     ```    
 
 3.  Edit the HOST_IP and other environment variables in `.env` file as follows
@@ -33,6 +67,11 @@
 
     MTX_WEBRTCICESERVERS2_0_USERNAME=<username>  # WebRTC credentials e.g. intel1234
     MTX_WEBRTCICESERVERS2_0_PASSWORD=<password>
+
+    # Change MR_URL default from:
+    # MR_URL=<PROTOCOL>://<MR_IP>:32002
+    # to:
+    MR_URL=http://<HOST_IP>:32002
 
     # application directory
     SAMPLE_APP=worker-safety-gear-detection
@@ -168,6 +207,40 @@
     docker compose down -v
     ```
     This will bring down the services in the application and remove any volumes.
+
+---
+
+## Model Not Found (Fix)
+
+If model is not found, unzip manually inside the container:
+
+1. Enter container:
+
+   ```bash
+   docker exec -it --user root dlstreamer-pipeline-server bash
+   ```
+
+2. Install unzip:
+
+   ```bash
+   apt-get update && apt-get install -y unzip
+   ```
+
+3. Unzip model:
+
+   ```bash
+   cd /home/pipeline-server/resources/models/worker-safety-gear-detection
+   unzip worker-safety-gear-detection.zip
+   ```
+
+4. Exit & restart:
+
+   ```bash
+   exit
+   docker restart dlstreamer-pipeline-server
+   ```
+
+---
 
 
 ## Further Reading
