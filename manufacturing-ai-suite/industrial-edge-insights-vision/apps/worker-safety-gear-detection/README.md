@@ -54,7 +54,7 @@ jq: command not found
      ```
     ```    
 
-3.  Edit the HOST_IP and other environment variables in `.env` file as follows
+4.  Edit the HOST_IP and other environment variables in `.env` file as follows
     ```sh
     HOST_IP=<HOST_IP>   # IP address of server where DLStreamer Pipeline Server is running.
 
@@ -62,9 +62,7 @@ jq: command not found
 
     MR_MINIO_ACCESS_KEY=   # MinIO service & client access key e.g. intel1234
     MR_MINIO_SECRET_KEY=   # MinIO service & client secret key e.g. intel1234
-
-    MR_URL= # Model registry url. Example http://<IP_address_of_model_registry_server>:32002
-
+    
     MTX_WEBRTCICESERVERS2_0_USERNAME=<username>  # WebRTC credentials e.g. intel1234
     MTX_WEBRTCICESERVERS2_0_PASSWORD=<password>
 
@@ -76,7 +74,7 @@ jq: command not found
     # application directory
     SAMPLE_APP=worker-safety-gear-detection
     ```
-4.  Install pre-requisites. Run with sudo if needed.
+5.  Install pre-requisites. Run with sudo if needed.
     ```sh
     ./setup.sh
     ```
@@ -84,11 +82,11 @@ jq: command not found
 
 ## Deploy the Application
 
-5.  Bring up the application
+6.  Bring up the application
     ```sh
     docker compose up -d
     ```
-6.  Fetch the list of pipeline loaded available to launch
+7.  Fetch the list of pipeline loaded available to launch
     ```sh
     ./sample_list.sh
     ```
@@ -125,7 +123,7 @@ jq: command not found
         ...
     ]
     ```
-7.  Start the sample application with a pipeline.
+8.  Start the sample application with a pipeline.
     ```sh
     ./sample_start.sh -p worker_safety_gear_detection
     ```
@@ -151,7 +149,7 @@ jq: command not found
     ```
     NOTE: This would start the pipeline. We can view the inference stream on WebRTC by opening a browser and navigating to http://<HOST_IP>:8889/worker_safety/
     
-8.  Get status of pipeline instance(s) running.
+9.  Get status of pipeline instance(s) running.
     ```sh
     ./sample_status.sh
     ```
@@ -173,7 +171,7 @@ jq: command not found
     }
     ]
     ```
-9.  Stop pipeline instance.
+10.  Stop pipeline instance.
     ```sh
     ./sample_stop.sh
     ```
@@ -202,7 +200,7 @@ jq: command not found
     If you wish to stop a specific instance, you can provide it with an `--id` argument to the command.    
     For example, `./sample_stop.sh --id 784b87b45d1511f08ab0da88aa49c01e`
 
-10. Bring down the application
+11. Bring down the application
     ```sh
     docker compose down -v
     ```
@@ -230,7 +228,7 @@ If model is not found, unzip manually inside the container:
 
    ```bash
    cd /home/pipeline-server/resources/models/worker-safety-gear-detection
-   unzip worker-safety-gear-detection.zip
+   unzip worker_safety_gear_detection.zip
    ```
 
 4. Exit & restart:
@@ -241,6 +239,108 @@ If model is not found, unzip manually inside the container:
    ```
 
 ---
+
+---
+
+how to swap the video source depending on whether the user has:
+
+* a **local file** (on their laptop/PC),
+* a **USB webcam**, or
+* a **remote RTSP stream** (e.g., from a Raspberry Pi camera).
+
+Right now the default `payload.json` hardcodes the test video at:
+
+```json
+"uri": "file:///home/pipeline-server/resources/videos/Safety_Full_Hat_and_Vest.avi"
+```
+
+---
+
+## Changing the Video Source after running the command **./setup.sh**
+
+By default, the pipeline runs on the sample video (`Safety_Full_Hat_and_Vest.avi`).
+You can change the **`payload.json`** file to use a different source:
+
+### 1. Local video file
+
+If your video file is on the laptop/host machine, first copy it into the container’s mounted `resources/videos` folder:
+
+```bash
+cp /path/to/your/local_video.mp4 manufacturing-ai-suite/industrial-edge-insights-vision/resources/videos/
+```
+
+Then edit `payload.json`:
+
+```json
+"source": {
+    "uri": "file:///home/pipeline-server/resources/videos/local_video.mp4",
+    "type": "uri"
+}
+```
+
+---
+
+### 2. USB webcam (plugged into host machine)
+
+Find your webcam device:
+
+```bash
+ls /dev/video*
+```
+
+Usually it’s `/dev/video0`. Then set:
+
+```json
+"source": {
+    "uri": "v4l2:///dev/video0",
+    "type": "uri"
+}
+```
+
+---
+
+### 3. RTSP stream (e.g. Raspberry Pi camera)
+
+If you’re streaming from a Raspberry Pi using RTSP, set the URI to your Pi’s stream address:
+
+```json
+"source": {
+    "uri": "rtsp://<raspberry_pi_ip>:8554/live",
+    "type": "uri"
+}
+```
+
+> ⚠️ Make sure your laptop and Raspberry Pi are on the **same network**, and replace `<raspberry_pi_ip>` with the Pi’s IP address.
+
+---
+
+### Example complete payload.json with RTSP stream
+
+```json
+[
+    {
+        "pipeline": "worker_safety_gear_detection",
+        "payload": {
+            "source": {
+                "uri": "rtsp://192.168.1.50:8554/live",
+                "type": "uri"
+            },
+            "destination": {
+                "frame": {
+                    "type": "webrtc",
+                    "peer-id": "worker_safety"
+                }
+            },
+            "parameters": {
+                "classification-properties": {
+                    "model": "/home/pipeline-server/resources/models/models/worker-safety-gear-detection/deployment/Detection/model/model.xml",
+                    "device": "CPU"
+                }
+            }
+        }
+    }
+]
+```
 
 
 ## Further Reading
